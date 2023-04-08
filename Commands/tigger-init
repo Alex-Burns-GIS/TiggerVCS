@@ -1,0 +1,30 @@
+#!/bin/dash
+
+# ==============================================================================
+# tigger-init
+# Initialises tigger repository, creating an empty directory named .tigger. 
+#
+# Written by: Alexander Burns <z5118440>
+# Date: 09-07-2022
+# For COMP2041/9044 Assignment 1
+# ==============================================================================
+
+# If number of arguments != 0, produce appropriate error message
+if ! [ "$#" -eq 0 ]
+then
+    echo "usage: tigger-init" 1>&2
+    exit 1
+fi
+
+# If the .tigger repository already exists, produce appropriate error message
+if [ -d .tigger ]
+then
+    echo "tigger-init: error: .tigger already exists" 1>&2
+    exit 1 
+
+# Otherwise, create the .tigger repository
+else
+    mkdir .tigger
+    echo "Initialized empty tigger repository in .tigger" 
+    exit 0
+fi
