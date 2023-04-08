@@ -1,0 +1,122 @@
+#!/bin/dash
+
+# ==============================================================================
+# tigger-show
+#  
+# Print contents of specified file from user-designated commit number. If
+# the commit number is omitted from input, the specified file contents will be 
+# printed from the matching file in the untouched index_files directory.  
+# 
+# Written by: Alexander Burns <z5118440>
+# Date: 09-07-2022
+# For COMP2041/9044 Assignment 1
+# ==============================================================================
+
+# Provide error message if .tigger not yet initialized   
+if ! [ -d .tigger ]    
+then
+    echo "tigger-show: error: tigger repository directory .tigger not found" 1>&2
+    exit 1
+fi
+
+# Provide error message if number of arguments != 1
+if ! [ "$#" -eq 1 ]
+then
+    echo "usage: tigger-show <commit>:<filename>" 1>&2
+    exit 1
+fi
+
+# Provide error message if there is no colon in argument 1
+if [ -z "$(echo $1 | grep -E ':')" ]
+then
+	echo "tigger-show: error: invalid object $1" 1>&2
+    exit 1
+fi
+
+# Otherwise, strip out commit number and filename and assign to variables
+commit_number=$(echo "$1" | cut -f1 -d':')
+show_file=$(echo "$1" | cut -f2 -d':')
+
+# Provide error message if both commit number and filename are ommitted
+if [ -z "$show_file" ] && [ -z "$commit_number" ]
+then
+    echo "tigger-show: error: invalid filename ''" 1>&2
+    exit 1
+fi
+
+# If commit number is ommitted, search index_files and committed_files.
+# If specified file is found, print specified file contents. 
+# Provide error message if file is not found in either directory.
+cd .tigger || exit 1
+mkdir -p index_files
+mkdir -p committed_files
+
+if [ -z "$commit_number" ]
+then
+    for dir in .tigger
+    do
+        cd index_files || exit 1
+	    
+	    for files in index_files
+	    do
+		    if ! [ -f "$show_file" ]
+		    then
+			    continue
+		    else
+			    cat "$show_file"
+			    exit 0
+		    fi
+	    done
+	    
+	    cd ..
+	    cd committed_files || exit 1
+	    
+	    for files in committed_files
+        do
+            if ! [ -f "$show_file" ]
+            then
+       		    echo "tigger-show: error: '$show_file' not found in index" 1>&2
+    		    exit 1
+    	    else
+    		    cat "$show_file"
+    		    exit 0
+    	    fi
+        done
+    done
+    cd ..
+fi
+
+cd ..
+cd .tigger || exit 1
+
+# Search for commit directory in .tigger. Once located, search for 
+# specified file and print contents. If commit number or filename do not exist,
+# provide appropriate error message.
+for dir in .tigger
+do
+	if ! [ -d "$commit_number" ]
+	then
+		echo "tigger-show: error: unknown commit '$commit_number'" 1>&2
+		exit 1
+	else
+		cd "$commit_number" || exit 1
+	   	
+	   	for files in $commit_number
+	    do
+	    	if [ -z "$show_file" ]
+	    	then
+	    	    echo "tigger-show: error: invalid filename '$show_file'" 1>&2
+	    	    exit 1	
+	    	fi
+		
+		    if ! [ -f "$show_file" ]
+		    then
+			    echo "tigger-show: error: '$show_file' not found in commit $commit_number" 1>&2
+			    exit 1
+		    else
+			    cat "$show_file"
+			    exit 0
+		    fi
+	    done
+	fi
+done
