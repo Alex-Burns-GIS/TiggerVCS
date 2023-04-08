@@ -1,0 +1,146 @@
+#!/bin/dash
+
+# ==============================================================================
+# tigger-commit
+#  
+# Adds files staged in the index to the .tigger repository. The committed 
+# files are moved to a directory 'x' in the repository, where 'x' denotes the 
+# commit number. Note, the latest commit directory includes all the files from 
+# previous commits. Commit numbers and associated commit messages are also 
+# tracked via updating of txt files. 
+
+# After a successful commit, the index directory is emptied, however, the 
+# index_files directory remains untouched. 
+#
+# Written by: Alexander Burns <z5118440>
+# Date: 09-07-2022
+# For COMP2041/9044 Assignment 1
+# ==============================================================================
+
+# Provide error message if .tigger not yet initialized    
+if ! [ -d .tigger ]    
+then
+    echo "tigger-commit: error: tigger repository directory .tigger not found" 1>&2
+    exit 1
+fi
+
+# Provide error message if number of arguments != 2
+if ! [ "$#" -eq 2 ]
+then
+    echo "usage: tigger-commit [-a] -m commit-message" 1>&2
+    exit 1
+fi
+
+# Provide error message if argument 1 is not "-m" 
+if ! [ "$1" = "-m" ]
+then
+    echo "usage: tigger-commit [-a] -m commit-message" 1>&2
+    exit 1
+fi
+
+cd .tigger || exit 1
+
+if ! [ -d index ]    
+then
+    mkdir index
+fi
+
+mkdir 0 > /dev/null 2>&1
+
+# Remove file from index if an identical file has already been committed 
+for dir in [0-9]*/ 
+do
+    diff -srq $dir/ index/ | grep identical | cut -f2 -d' ' | cut -f1 -d' ' | 
+    cut -f2 -d'/' >> remove_from_index.txt 
+done
+
+mv remove_from_index.txt index > /dev/null 
+cd index || exit 1
+
+for f in $(cat remove_from_index.txt) 
+do 
+  rm "$f" > /dev/null 2>&1
+done
+
+rm remove_from_index.txt
+
+# Check if the index is empty
+if ! [ "$(ls $index)" ]
+then
+    echo "nothing to commit" 1>&2
+    exit 1
+fi
+
+# Provide error message if the index is empty except for commit_counter
+if [ "$(ls -1bA | wc -l)" -eq 1 ] 
+then
+    if [ -f commit_counter.txt ]
+    then
+        echo "nothing to commit" 1>&2
+        exit 1
+    fi
+fi
+
+# Assign 'x' (a counter for the commit number)
+if [ -f commit_counter.txt ]
+then
+    x=$(cat commit_counter.txt)
+else
+    x=0 > commit_counter.txt
+fi
+
+# If the index is not empty, move files to designated commit directory and 
+# append commit message to log. 
+
+# Use 'y' counter to update new commit directory with files in previous 
+# commit directory.
+if  [ "$(ls $index)" ]
+then
+    if [ "$1" = "-m" ]
+    then
+        message="$2"
+        cd ..
+        printf "$message\n" >> message_log.txt
+        cd index || exit 1
+    else
+        echo usage: tigger-commit [-a] -m commit-message 1>&2
+        exit 1
+    fi 
+
+    for file in "$index"
+    do
+        cd ..
+        if [ -f .tigger ]
+        then
+            echo "nothing to commit" 1>&2
+        else
+            if ! [ -d "$x" ]
+            then
+                mkdir "$x"
+                y=$(($x-1))
+                cd "$y" || exit 1
+                
+                for files in "$y"
+                do
+                    cp $files * ../"$x"/ > /dev/null 2>&1
+                    cd ..
+                done
+            fi
+            
+            if ! [ -d committed_files ]
+            then
+                mkdir committed_files
+            fi
+                        
+            cd index || exit 1
+            
+            cp "$file" * ../committed_files/ > /dev/null 2>&1
+            mv "$file" * ../"$x"/ > /dev/null 2>&1
+            echo Committed as commit "$x"
+            x=$((x+1))
+            echo "$x" > commit_counter.txt
+        fi
+    done    
+fi    
+cd ..
+cd ..
