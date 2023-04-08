@@ -1,0 +1,61 @@
+#!/bin/dash
+
+# ==============================================================================
+# tigger-add
+# Adds a copy of file to both the repository's index in .tigger and an 
+# ancillary directory (index_files) which facilitates the functionality 
+# of tigger-show.
+#
+# Written by: Alexander Burns <z5118440>
+# Date: 09-07-2022
+# For COMP2041/9044 Assignment 1
+# ==============================================================================
+
+# Provide error message if .tigger not yet initialized    
+if ! [ -d .tigger ]    
+then
+    echo 'tigger-add: error: tigger repository directory .tigger not found' 1>&2
+    exit 1
+fi
+
+# Provide error message if a file in argument doesn't exist 
+for file in "$@"
+do
+    if [ ! -f "$file" ] > /dev/null 2>&1
+    then
+        echo "tigger-add: error: can not open '$file'" 1>&2
+        exit 1
+    fi
+done
+   
+# Provide error message if there is no argument 
+if [ $# -eq 0 ] 
+then
+    echo "usage: tigger-add <filenames>" 1>&2
+  	exit 1
+fi
+
+# Otherwise, if existing file/s is called in argument, loop through and send 
+# each to index and index_files
+for file in "$@" 
+do        
+    cp "$file" .tigger
+    cd .tigger || exit 1
+            
+    if ! [ -d index_files ]
+    then
+        mkdir index_files
+    fi
+            
+    cp "$file" index_files
+            
+    if ! [ -d index ]
+    then
+        mkdir index
+        mv "$file" index
+        cd .. > /dev/null 2>&1
+    else
+        mv "$file" index
+        cd .. > /dev/null 2>&1
+    fi
+done
