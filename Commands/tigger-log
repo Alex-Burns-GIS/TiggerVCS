@@ -1,0 +1,39 @@
+#!/bin/dash
+
+# ==============================================================================
+# tigger-log
+# Prints a line for each commit made to the .tigger repository. Each line 
+# includes the commit number and matching commit message. 
+#
+# Written by: Alexander Burns <z5118440>
+# Date: 09-07-2022
+# For COMP2041/9044 Assignment 1
+# ==============================================================================
+
+# Provide error message if .tigger not yet initialized  
+if ! [ -d .tigger ]    
+then
+    echo "tigger-log: error: tigger repository directory .tigger not found" 1>&2
+    exit 1
+fi
+
+# Provide error message if number of arguments != 0
+if ! [ $# -eq 0 ]
+then
+    echo "usage: tigger-log" 1>&2
+    exit 1
+fi
+
+cd .tigger || exit 1 
+
+# Process, print, and number commit messages to adhere to numbering and format
+# requirements  
+FILE=message_log.txt
+
+if test -f "$FILE" 
+then
+    cat message_log.txt | nl -v 0 | tac | sed 's/^[ \t]*//' | tr "\t" " "
+    exit 0 
+else
+    exit 0
+fi
